@@ -1,0 +1,14 @@
+services:
+  sonar-scanner:
+    image: sonarsource/sonar-scanner-cli
+    environment:
+      SONAR_HOST_URL: "http://host.docker.internal:9000"
+      SONAR_TOKEN: ${SONAR_TOKEN}
+      SONAR_SCANNER_OPTS: "-Dsonar.projectKey=${SONAR_PROJECT_KEY}"
+    volumes:
+      - "${PROJECT_PATH}:/usr/src"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    deploy:
+      restart_policy:
+        condition: none
