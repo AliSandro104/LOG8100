@@ -1,10 +1,3 @@
-name: Disallow non-develop PRs
-
-on:
-  pull_request:
-    branches:
-      - master
-
 jobs:
   check-branch:
     runs-on: ubuntu-latest
@@ -16,3 +9,13 @@ jobs:
             echo "Error: PR can only be merged from the develop branch."
             exit 1
           fi
+
+      - name: Post failure comment
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              body: "This PR is invalid. Only PRs from the `develop` branch can be merged into `master`."
+            })
