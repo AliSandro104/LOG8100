@@ -1,0 +1,18 @@
+name: Disallow non-develop PRs
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  check-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check if the PR is from develop
+        run: |
+          if [ "${{ github.head_ref }}" != "develop" ]; then
+            echo "Error: PR can only be merged from the develop branch."
+            exit 1
+          fi
