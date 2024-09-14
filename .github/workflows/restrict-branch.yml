@@ -1,0 +1,26 @@
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  check-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check if the PR is from develop
+        run: |
+          if [ "${{ github.head_ref }}" != "develop" ]; then
+            echo "Error: PR can only be merged from the develop branch."
+            exit 1
+          fi
+
+      - name: Post failure comment
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              body: "This PR is invalid. Only PRs from the `develop` branch can be merged into `master`."
+            })
