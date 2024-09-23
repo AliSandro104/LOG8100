@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# Run SonarScanner against your local SonarQube server
+sonar-scanner \
+  -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+  -Dsonar.sources=. \
+  -Dsonar.host.url="http://host.docker.internal:9000" \
+  -Dsonar.login=${SONAR_TOKEN}
+
+if [ $? -ne 0 ]; then
+    echo "SonarQube found issues. Please resolve them before committing."
+    exit 1
+fi
+
+# Add a badge to the README if the analysis succeeds
+README="README.md"
+BADGE="![SonarQube Analysis Passed](https://img.shields.io/badge/sonarqube-passed-brightgreen.svg)"
+
+if ! grep -q "sonarqube-passed" "$README"; then
+    echo "Adding SonarQube badge to README.md"
+    echo -e "\n$BADGE" >> "$README"
+    git add "$README"
+fi
