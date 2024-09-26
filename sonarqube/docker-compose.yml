@@ -1,6 +1,6 @@
 services:
   sonarqube:
-    image: sonarqube:latest  # Shouldn't be set to the latest tag 
+    image: sonarqube:latest  # Shouldn't be set to the latest tag
     container_name: sonarqube-custom
     ports:
       - "9000:9000"
