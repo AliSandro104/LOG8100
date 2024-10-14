@@ -11,4 +11,4 @@ jobs:
     - name: ZAP Scan
       uses: zaproxy/action-full-scan@v0.11.0
       with:
-        target: ${{ secrets.WEB_APP_DNS }}
+        target: ${{ vars.WEB_APP_DNS }}
