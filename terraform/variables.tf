@@ -11,12 +11,6 @@ variable "admin_password" {
   sensitive   = true
 }
 
-variable "ansible_user_password" {
-  description = "The ansible admin password for the Linux VM."
-  type        = string
-  sensitive   = true
-}
-
 variable "iac_remote_repository_url" {
   description = "The remote repository URL containing the IaC scripts."
   type        = string

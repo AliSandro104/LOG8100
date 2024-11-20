@@ -12,6 +12,9 @@
   - name: Include Helm setup playbook
     import_playbook: install_helm.yml
 
+  - name: Include Ingress Controller setup playbook
+    import_playbook: deploy_ingress_controller.yml
+
   - name: Include Cert Manager setup playbook
     import_playbook: deploy_cert_manager.yml
 
