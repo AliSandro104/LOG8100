@@ -1,0 +1,88 @@
+---
+- hosts: localhost
+  connection: local
+  become: yes
+
+  tasks:
+    # Step 1: Ensure Minikube context is active
+    - name: Ensure Minikube context is active
+      command: "kubectl config use-context minikube"
+      changed_when: false
+
+    # Step 3: Add the ingress-nginx Helm repository
+    - name: Add ingress-nginx Helm repository
+      command: "helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx"
+      register: add_repo_result
+
+    # Step 4: Update Helm repositories
+    - name: Update Helm repositories
+      command: "helm repo update"
+      register: repo_update_result
+
+    # Step 5: Install NGINX Ingress Controller using Helm
+    - name: Install NGINX Ingress Controller using Helm
+      command: >
+        helm install nginx-ingress ingress-nginx/ingress-nginx
+        --namespace ingress-nginx
+        --create-namespace
+        --set controller.service.type=LoadBalancer
+      register: nginx_ingress_install
+      changed_when: "'STATUS: deployed' in nginx_ingress_install.stdout"
+
+    # Step 6: Wait for NGINX Ingress Controller to be in ready state
+    - name: Wait for NGINX Ingress Controller to be in ready state
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: ingress-nginx
+      register: nginx_ingress_pods
+
+    # Step 7: Run kubectl port-forward as a background task
+    - name: Run kubectl port-forward with nohup in the background
+      shell: "nohup kubectl port-forward --address 0.0.0.0 service/nginx-ingress-ingress-nginx-controller -n ingress-nginx 80:80 443:443 > /tmp/port-forward.log 2>&1 &"
+      async: 0  # Run indefinitely
+      poll: 0   # Don't wait for the command to finish
+      ignore_errors: true  # Prevent failure if port-forward is already running
+      register: port_forward_result
+
+    - name: Check kubectl port-forward result
+      debug:
+        msg: "Port forwarding for NGINX Ingress Controller started: {{ port_forward_result }}"
+
+    # Step 7: Add Cert-Manager Helm repository
+    - name: Add Cert-Manager Helm repository
+      command: "helm repo add jetstack https://charts.jetstack.io"
+      register: add_cert_manager_repo_result
+
+    # Step 8: Update Helm repositories (to include Cert-Manager)
+    - name: Update Helm repositories
+      command: "helm repo update"
+      register: repo_update_result_cert_manager
+
+    # Step 9: Install Cert-Manager using Helm
+    - name: Install Cert-Manager using Helm
+      command: >
+        helm install cert-manager jetstack/cert-manager
+        --namespace cert-manager
+        --create-namespace
+        --set installCRDs=true
+      register: cert_manager_install
+      changed_when: "'STATUS: deployed' in cert_manager_install.stdout"
+
+    # Step 11: Create Let's Encrypt Production ClusterIssuer
+    - name: Create Let's Encrypt Production ClusterIssuer
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: cert-manager.io/v1
+          kind: ClusterIssuer
+          metadata:
+            name: letsencrypt-production
+          spec:
+            acme:
+              server: https://acme-v02.api.letsencrypt.org/directory
+              email: team-1-log8100@gmail.com
+              privateKeySecretRef:
+                name: letsencrypt-production-key
+              solvers:
+                - http01:
+                    ingress:
+                      class: nginx

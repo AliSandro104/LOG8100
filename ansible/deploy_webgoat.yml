@@ -1,0 +1,100 @@
+---
+- hosts: localhost
+  connection: local
+  become: yes
+
+  tasks:
+    # Deploy WebGoat application
+    - name: Create WebGoat namespace
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: webgoat
+
+    - name: Create Kubernetes Deployment for WebGoat
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: webgoat
+            namespace: webgoat
+            labels:
+              app: webgoat
+          spec:
+            replicas: 2
+            selector:
+              matchLabels:
+                app: webgoat
+            template:
+              metadata:
+                labels:
+                  app: webgoat
+              spec:
+                containers:
+                - name: webgoat
+                  image: webgoat/webgoat:latest
+                  ports:
+                  - containerPort: 8080
+                  securityContext:
+                    runAsUser: 1000
+                    runAsGroup: 1000
+                    fsGroup: 2000
+                    allowPrivilegeEscalation: false
+                  resources:
+                    limits:
+                      memory: "512Mi"
+                      cpu: "500m"
+                    requests:
+                      memory: "256Mi"
+                      cpu: "250m"
+
+    - name: Expose WebGoat service internally
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: webgoat-service
+            namespace: webgoat
+          spec:
+            selector:
+              app: webgoat
+            ports:
+              - protocol: TCP
+                port: 8080
+                targetPort: 8080
+            type: ClusterIP
+
+    # Create Ingress with Let's Encrypt TLS
+    - name: Create Ingress resource with Let's Encrypt TLS
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: webgoat-ingress
+            namespace: webgoat
+            annotations:
+              cert-manager.io/cluster-issuer: letsencrypt-production  # Use Let's Encrypt production issuer
+              nginx.ingress.kubernetes.io/ssl-redirect: "true"
+              nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+          spec:
+            ingressClassName: nginx
+            tls:
+              - hosts:
+                  - team-1-log8100-project.canadacentral.cloudapp.azure.com
+                secretName: webgoat-tls  # Cert-Manager create this secret
+            rules:
+              - host: team-1-log8100-project.canadacentral.cloudapp.azure.com
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: webgoat-service
+                          port:
+                            number: 8080

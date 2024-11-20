@@ -28,10 +28,10 @@ resource "azurerm_public_ip" "public_ip" {
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Dynamic"
-  domain_name_label   = "log8100-project"
+  domain_name_label   = "team-1-log8100-project"
 }
 
-# Define Network Security Group (NSG)
+# Define Network Security Group (NSG) with SSH, HTTP, and HTTPS rules
 resource "azurerm_network_security_group" "nsg" {
   name                = "project_nsg"
   location            = azurerm_resource_group.rg.location
@@ -45,6 +45,30 @@ resource "azurerm_network_security_group" "nsg" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "Allow_HTTP"
+    priority                   = 1002
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "Allow_HTTPS"
+    priority                   = 1003
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
@@ -122,10 +146,29 @@ resource "azurerm_linux_virtual_machine" "vm" {
     }
 
     inline = [
+      # Create the ansible user and set its password
+      "sudo useradd -m -s /bin/bash ansible",
+      "echo 'ansible:{{var.ansible_user_password}}' | sudo chpasswd",
+      # Grant the ansible user passwordless sudo privileges
+      "echo 'ansible ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/ansible",
+      # Ensure SSH access is enabled for the ansible user
+      "sudo mkdir -p /home/ansible/.ssh",
+      "sudo cp /root/.ssh/authorized_keys /home/ansible/.ssh/",
+      "sudo chown -R ansible:ansible /home/ansible/.ssh",
+      "sudo chmod 700 /home/ansible/.ssh",
+      "sudo chmod 600 /home/ansible/.ssh/authorized_keys",
+      # Setup pip3 + libraries
+      "apt install python3-pip",
+      "pip3 install kubernetes",
+      # Install Ansible
       "sudo apt-get update",
       "sudo apt-get install -y software-properties-common",
       "sudo apt-add-repository --yes --update ppa:ansible/ansible",
-      "sudo apt-get install -y ansible"
+      "sudo apt-get install -y ansible",
+      # Fetch IaC scripts
+      # "git clone {{var.iac_remote_repository_url}} /opt/iac"
+      # "cd /opt/iac/ansible"
+      # "ansible-playbook master.yml"
     ]
   }
 
