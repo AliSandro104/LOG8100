@@ -52,6 +52,10 @@
                     requests:
                       memory: "256Mi"
                       cpu: "250m"
+      register: webgoat_deployment
+      changed_when: webgoat_deployment.result is defined and
+                    webgoat_deployment.result.object.status.updatedReplicas is defined and
+                    webgoat_deployment.result.object.status.updatedReplicas > 0
 
     - name: Expose WebGoat service internally
       kubernetes.core.k8s:
@@ -110,3 +114,13 @@
                           port:
                             number: 8080
       when: tls_secret_check.resources | length == 0
+
+
+    # Run kubectl port-forward only if the WebGoat deployment is updated
+    - name: Run kubectl port-forward with nohup in the background
+      shell: "sudo nohup kubectl port-forward --address 0.0.0.0 service/nginx-ingress-ingress-nginx-controller -n ingress-nginx 80:80 443:443 > /tmp/port-forward.log 2>&1 &"
+      async: 0  # Run indefinitely
+      poll: 0   # Don't wait for the command to finish
+      ignore_errors: true  # Prevent failure if port-forward is already running
+      register: port_forward_result
+      when: webgoat_deployment.changed
