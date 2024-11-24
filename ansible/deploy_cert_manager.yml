@@ -16,11 +16,21 @@
       command: "helm repo update"
       register: repo_update_result_cert_manager
 
+    - name: Create cert-manager namespace with owner label
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: cert-manager
+            labels:
+              owner: "team.force"
+
     - name: Install Cert-Manager using Helm
       command: >
         helm install cert-manager jetstack/cert-manager
         --namespace cert-manager
-        --create-namespace
         --set installCRDs=true
       register: cert_manager_install
       changed_when: "'STATUS: deployed' in cert_manager_install.stdout"

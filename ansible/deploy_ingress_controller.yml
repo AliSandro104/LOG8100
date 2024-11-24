@@ -16,11 +16,21 @@
       command: "helm repo update"
       register: repo_update_result
 
+    - name: Create nginx-ingress namespace with owner label
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: nginx-ingress
+            labels:
+              owner: "team.force"
+
     - name: Install NGINX Ingress Controller using Helm
       command: >
         helm install nginx-ingress ingress-nginx/ingress-nginx
         --namespace ingress-nginx
-        --create-namespace
         --set controller.service.type=LoadBalancer
       register: nginx_ingress_install
       changed_when: "'STATUS: deployed' in nginx_ingress_install.stdout"

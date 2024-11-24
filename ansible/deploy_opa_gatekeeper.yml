@@ -92,21 +92,21 @@
                     msg := sprintf("container <%v> has an invalid image repo <%v>, allowed repos are %v", [container.name, container.image, input.parameters.repos])
                   }
 
-    - name: Apply Team Label Constraint
+    - name: Apply Owner Label Constraint
       kubernetes.core.k8s:
         state: present
         definition:
           apiVersion: constraints.gatekeeper.sh/v1beta1
           kind: K8sRequiredLabels
           metadata:
-            name: require-team-label
+            name: require-owner-label
           spec:
             match:
               kinds:
                 - apiGroups: [""]
-                  kinds: ["Pod"]
+                  kinds: ["Namespace"]
             parameters:
-              labels: ["team"]
+              labels: ["owner"]
 
     - name: Apply Allowed Repos Constraint
       kubernetes.core.k8s:
