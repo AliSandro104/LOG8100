@@ -15,6 +15,48 @@
             labels:
               owner: "team.force"
 
+    # Create Persistent Volume
+    - name: Create Persistent Volume for WebGoat
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: PersistentVolume
+          metadata:
+            name: webgoat-pv
+            labels:
+              app: webgoat
+          spec:
+            capacity:
+              storage: 5Gi
+            accessModes:
+              - ReadWriteMany
+            persistentVolumeReclaimPolicy: Retain
+            hostPath:
+              path: "/mnt/data/webgoat"
+
+    # Create Persistent Volume Claim
+    - name: Create Persistent Volume Claim for WebGoat
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            name: webgoat-pvc
+            namespace: webgoat
+          labels:
+            app: webgoat
+          spec:
+            accessModes:
+              - ReadWriteMany
+            resources:
+              requests:
+                storage: 5Gi
+            selector:
+              matchLabels:
+                app: webgoat
+
     - name: Create Kubernetes Deployment for WebGoat
       kubernetes.core.k8s:
         definition:
@@ -52,6 +94,13 @@
                     requests:
                       memory: "256Mi"
                       cpu: "250m"
+                  volumeMounts:
+                  - name: webgoat-storage
+                    mountPath: /home/webgoat
+                volumes:
+                - name: webgoat-storage
+                  persistentVolumeClaim:
+                    claimName: webgoat-pvc
       register: webgoat_deployment
       changed_when: webgoat_deployment.result is defined and
                     webgoat_deployment.result.object.status.updatedReplicas is defined and
