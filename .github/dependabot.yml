@@ -6,6 +6,6 @@
 version: 2
 updates:
   - package-ecosystem: "npm" # See documentation for possible values
-    directory: "/dvna" # Location of package manifests
+    directory: "/WebGoat" # Location of package manifests
     schedule:
       interval: "weekly"
