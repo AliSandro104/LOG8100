@@ -1,0 +1,173 @@
+---
+- hosts: localhost
+  connection: local
+  become: yes
+  
+  vars:
+    gatekeeper_version: v3.14.0
+    templates_dir: templates
+    policies_dir: policies
+    namespace: gatekeeper-system
+
+  tasks:
+    - name: Create temporary directory for manifests
+      file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - "{{ templates_dir }}"
+        - "{{ policies_dir }}"
+
+    - name: Install Gatekeeper
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('url', 'https://raw.githubusercontent.com/open-policy-agent/gatekeeper/{{ gatekeeper_version }}/deploy/gatekeeper.yaml') | from_yaml_all | list }}"
+
+    - name: Wait for Gatekeeper pods to be ready
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: "{{ namespace }}"
+        label_selectors:
+          - control-plane=controller-manager
+      register: gatekeeper_pods
+      until: 
+        - gatekeeper_pods.resources is defined
+        - gatekeeper_pods.resources | length > 0
+        - gatekeeper_pods.resources[0].status.phase == "Running"
+      retries: 30
+      delay: 10
+
+    - name: Create Required Labels Template
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: templates.gatekeeper.sh/v1
+          kind: ConstraintTemplate
+          metadata:
+            name: k8srequiredlabels
+          spec:
+            crd:
+              spec:
+                names:
+                  kind: K8sRequiredLabels
+            targets:
+              - target: admission.k8s.gatekeeper.sh
+                rego: |
+                  package k8srequiredlabels
+                  violation[{"msg": msg}] {
+                    provided := {label | input.review.object.metadata.labels[label]}
+                    required := {label | label := input.parameters.labels[_]}
+                    missing := required - provided
+                    count(missing) > 0
+                    msg := sprintf("Missing required labels: %v", [missing])
+                  }
+
+    - name: Create Allowed Repos Template
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: templates.gatekeeper.sh/v1
+          kind: ConstraintTemplate
+          metadata:
+            name: k8sallowedrepos
+          spec:
+            crd:
+              spec:
+                names:
+                  kind: K8sAllowedRepos
+            targets:
+              - target: admission.k8s.gatekeeper.sh
+                rego: |
+                  package k8sallowedrepos
+                  violation[{"msg": msg}] {
+                    container := input.review.object.spec.containers[_]
+                    satisfied := [good | repo := input.parameters.repos[_] ; good := startswith(container.image, repo)]
+                    not any(satisfied)
+                    msg := sprintf("container <%v> has an invalid image repo <%v>, allowed repos are %v", [container.name, container.image, input.parameters.repos])
+                  }
+
+    - name: Apply Team Label Constraint
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: constraints.gatekeeper.sh/v1beta1
+          kind: K8sRequiredLabels
+          metadata:
+            name: require-team-label
+          spec:
+            match:
+              kinds:
+                - apiGroups: [""]
+                  kinds: ["Pod"]
+            parameters:
+              labels: ["team"]
+
+    - name: Apply Allowed Repos Constraint
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: constraints.gatekeeper.sh/v1beta1
+          kind: K8sAllowedRepos
+          metadata:
+            name: allowed-repos
+          spec:
+            match:
+              kinds:
+                - apiGroups: [""]
+                  kinds: ["Pod"]
+            parameters:
+              repos: 
+                - "gcr.io/"
+                - "docker.io/"
+
+    - name: Create Resource Limits Template
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: templates.gatekeeper.sh/v1
+          kind: ConstraintTemplate
+          metadata:
+            name: k8srequiredresources
+          spec:
+            crd:
+              spec:
+                names:
+                  kind: K8sRequiredResources
+            targets:
+              - target: admission.k8s.gatekeeper.sh
+                rego: |
+                  package k8srequiredresources
+                  violation[{"msg": msg}] {
+                    container := input.review.object.spec.containers[_]
+                    required := input.parameters.limits
+                    provided := {resource | container.resources.limits[resource]}
+                    missing := required - provided
+                    count(missing) > 0
+                    msg := sprintf("container <%v> is missing required resource limits: %v", [container.name, missing])
+                  }
+
+    - name: Apply Resource Limits Constraint
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: constraints.gatekeeper.sh/v1beta1
+          kind: K8sRequiredResources
+          metadata:
+            name: required-resources
+          spec:
+            match:
+              kinds:
+                - apiGroups: [""]
+                  kinds: ["Pod"]
+            parameters:
+              limits: ["cpu", "memory"]
+
+    - name: Verify Constraints
+      kubernetes.core.k8s_info:
+        kind: Constraint
+        namespace: "{{ namespace }}"
+      register: constraints_status
+
+    - name: Display Constraints Status
+      debug:
+        var: constraints_status

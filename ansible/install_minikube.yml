@@ -3,7 +3,6 @@
   connection: local
   become: yes
   tasks:
-    # Step 1: Install Minikube
     - name: Download Minikube binary
       get_url:
         url: "https://storage.googleapis.com/minikube/releases/v1.34.0/minikube-linux-amd64"
@@ -15,7 +14,6 @@
       register: minikube_version
       changed_when: false
 
-    # Step 2: Install kubectl
     - name: Get the latest stable Kubernetes version
       command: "curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt"
       register: kubectl_version
@@ -31,11 +29,9 @@
       register: kubectl_version_output
       changed_when: false
 
-    # Step 3: Start Minikube with 2 nodes and RBAC enabled
     - name: Start Minikube with 2 nodes and RBAC enabled
       command: "sudo minikube start --nodes 2 --driver=docker --force"
 
-    # Step 4: Wait for Minikube to be ready
     - name: Wait for Minikube to be ready
       command: "minikube status"
       register: minikube_status

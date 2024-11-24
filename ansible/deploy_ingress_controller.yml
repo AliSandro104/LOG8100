@@ -4,22 +4,18 @@
   become: yes
 
   tasks:
-    # Step 1: Ensure Minikube context is active
     - name: Ensure Minikube context is active
       command: "kubectl config use-context minikube"
       changed_when: false
 
-    # Step 3: Add the ingress-nginx Helm repository
     - name: Add ingress-nginx Helm repository
       command: "helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx"
       register: add_repo_result
 
-    # Step 4: Update Helm repositories
     - name: Update Helm repositories
       command: "helm repo update"
       register: repo_update_result
 
-    # Step 5: Install NGINX Ingress Controller using Helm
     - name: Install NGINX Ingress Controller using Helm
       command: >
         helm install nginx-ingress ingress-nginx/ingress-nginx
@@ -29,21 +25,18 @@
       register: nginx_ingress_install
       changed_when: "'STATUS: deployed' in nginx_ingress_install.stdout"
 
-    # Step 6: Wait for NGINX Ingress Controller to be in ready state
     - name: Wait for NGINX Ingress Controller to be in ready state
       kubernetes.core.k8s_info:
         kind: Pod
         namespace: ingress-nginx
       register: nginx_ingress_pods
 
-    # Step 7: Run minikube port-forward as a background task
     - name: Run minikube tunnel with nohup in the background
       shell: "sudo nohup minikube tunnel > /tmp/minikube-tunnel.log 2>&1 &"
       async: 0  # Run indefinitely
       poll: 0   # Don't wait for the command to finish
       ignore_errors: true  # Prevent failure if minikube tunnel is already running
 
-    # Step 8: Run kubectl port-forward as a background task
     - name: Run kubectl port-forward with nohup in the background
       shell: "sudo nohup kubectl port-forward --address 0.0.0.0 service/nginx-ingress-ingress-nginx-controller -n ingress-nginx 80:80 443:443 > /tmp/port-forward.log 2>&1 &"
       async: 0  # Run indefinitely

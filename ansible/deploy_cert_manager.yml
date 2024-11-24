@@ -4,22 +4,18 @@
   become: yes
 
   tasks:
-    # Step 1: Ensure Minikube context is active
     - name: Ensure Minikube context is active
       command: "kubectl config use-context minikube"
       changed_when: false
 
-    # Step 2: Add Cert-Manager Helm repository
     - name: Add Cert-Manager Helm repository
       command: "helm repo add jetstack https://charts.jetstack.io"
       register: add_cert_manager_repo_result
 
-    # Step 3: Update Helm repositories (to include Cert-Manager)
     - name: Update Helm repositories
       command: "helm repo update"
       register: repo_update_result_cert_manager
 
-    # Step 4: Install Cert-Manager using Helm
     - name: Install Cert-Manager using Helm
       command: >
         helm install cert-manager jetstack/cert-manager
@@ -29,7 +25,6 @@
       register: cert_manager_install
       changed_when: "'STATUS: deployed' in cert_manager_install.stdout"
 
-    # Step 5: Create Let's Encrypt Production ClusterIssuer
     - name: Create Let's Encrypt Production ClusterIssuer
       kubernetes.core.k8s:
         definition:
