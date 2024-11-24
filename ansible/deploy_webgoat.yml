@@ -70,7 +70,16 @@
                 targetPort: 8080
             type: ClusterIP
 
-    # Create Ingress with Let's Encrypt TLS
+    # Check if TLS certificate already exists
+    - name: Check if TLS certificate secret exists
+      kubernetes.core.k8s_info:
+        kind: Secret
+        namespace: webgoat
+        name: webgoat-tls
+      register: tls_secret_check
+      failed_when: false  # Don't fail if the secret doesn't exist
+
+    # Create Ingress with Let's Encrypt TLS only if the certificate doesn't exist
     - name: Create Ingress resource with Let's Encrypt TLS
       kubernetes.core.k8s:
         definition:
@@ -88,7 +97,7 @@
             tls:
               - hosts:
                   - team-1-log8100-project.canadacentral.cloudapp.azure.com
-                secretName: webgoat-tls  # Cert-Manager create this secret
+                secretName: webgoat-tls  # Cert-Manager creates this secret
             rules:
               - host: team-1-log8100-project.canadacentral.cloudapp.azure.com
                 http:
@@ -100,3 +109,4 @@
                           name: webgoat-service
                           port:
                             number: 8080
+      when: tls_secret_check.resources | length == 0
