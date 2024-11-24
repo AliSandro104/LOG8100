@@ -12,6 +12,8 @@
           kind: Namespace
           metadata:
             name: webgoat
+            labels:
+              owner: "team.force"
 
     - name: Create Kubernetes Deployment for WebGoat
       kubernetes.core.k8s:
