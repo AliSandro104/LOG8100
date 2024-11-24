@@ -42,3 +42,41 @@
     - name: Show Minikube status
       debug:
         msg: "{{ minikube_status.stdout }}"
+
+    - name: Create systemd service file for Minikube
+      copy:
+        dest: /etc/systemd/system/minikube.service
+        content: |
+          [Unit]
+          Description=Minikube Kubernetes Cluster
+          After=network.target docker.service
+          
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          User=root
+          ExecStart=/usr/local/bin/minikube start --nodes 2 --driver=docker
+          ExecStop=/usr/local/bin/minikube stop
+          
+          [Install]
+          WantedBy=multi-user.target
+        mode: '0644'
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable Minikube service
+      systemd:
+        name: minikube
+        enabled: yes
+        state: started
+
+    - name: Verify Minikube service status
+      command: systemctl status minikube
+      register: service_status
+      changed_when: false
+
+    - name: Display service status
+      debug:
+        msg: "{{ service_status.stdout_lines }}"

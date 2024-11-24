@@ -18,10 +18,16 @@
         - "{{ templates_dir }}"
         - "{{ policies_dir }}"
 
+    - name: Download Gatekeeper manifest
+      get_url:
+        url: "https://raw.githubusercontent.com/open-policy-agent/gatekeeper/{{ gatekeeper_version }}/deploy/gatekeeper.yaml"
+        dest: "/tmp/gatekeeper.yaml"
+        mode: '0644'
+
     - name: Install Gatekeeper
       kubernetes.core.k8s:
         state: present
-        definition: "{{ lookup('url', 'https://raw.githubusercontent.com/open-policy-agent/gatekeeper/{{ gatekeeper_version }}/deploy/gatekeeper.yaml') | from_yaml_all | list }}"
+        src: "/tmp/gatekeeper.yaml"
 
     - name: Wait for Gatekeeper pods to be ready
       kubernetes.core.k8s_info:
