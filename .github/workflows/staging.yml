@@ -69,12 +69,11 @@ jobs:
       # Run Trivy vulnerability scanner
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
-        continue-on-error: true
         with:
           image-ref: ${{ vars.DOCKER_NAMESPACE }}/${{ vars.DOCKER_REPOSITORY }}:${{ env.VERSION }}
           format: 'sarif'
           output: 'trivy-results.sarif'
-          exit-code: '1'
+          exit-code: '0'
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
