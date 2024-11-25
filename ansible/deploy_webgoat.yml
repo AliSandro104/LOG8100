@@ -1,6 +1,5 @@
 ---
-- hosts: localhost
-  connection: local
+- hosts: webgoat_host
   become: yes
 
   tasks:
