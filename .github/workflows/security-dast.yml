@@ -8,7 +8,6 @@ on:
 jobs:
   zap_scan:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     name: Dynamic Application Security Testing (DAST)
     steps:
     - name: ZAP Scan
