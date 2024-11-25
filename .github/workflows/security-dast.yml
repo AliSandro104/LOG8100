@@ -1,10 +1,8 @@
 name: Run DAST
 
 on:
-  workflow_dispatch:
   workflow_run:
-    workflows:
-      - Staging Release Workflow
+    workflows: [Staging Release Workflow]
     types:
       - completed
 
