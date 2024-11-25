@@ -38,6 +38,7 @@ jobs:
         working-directory: ./WebGoat
         run: ./mvnw clean install
 
+      # Build and publish docker container
       - name: Log in to Docker Hub
         uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
         with:
@@ -64,3 +65,22 @@ jobs:
           subject-name: docker.io/${{ vars.DOCKER_NAMESPACE }}/${{ vars.DOCKER_REPOSITORY}}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
+
+      # Run Trivy vulnerability scanner
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ vars.DOCKER_NAMESPACE }}/${{ vars.DOCKER_REPOSITORY }}:${{ env.VERSION }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+          timeout: '10m'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'

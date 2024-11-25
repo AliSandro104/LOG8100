@@ -48,6 +48,7 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
+    # Create release
     - name: Extract version from branch name
       id: extract_version
       run: echo "VERSION=${GITHUB_HEAD_REF#release/}" >> $GITHUB_ENV
@@ -72,6 +73,7 @@ jobs:
         draft: false
         prerelease: false
 
+    # Build and publish docker container
     - name: Build and push Docker image
       id: push
       uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
