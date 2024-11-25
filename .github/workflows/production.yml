@@ -90,3 +90,15 @@ jobs:
         subject-name: docker.io/${{ vars.DOCKER_NAMESPACE }}/${{ vars.DOCKER_REPOSITORY}}
         subject-digest: ${{ steps.push.outputs.digest }}
         push-to-registry: true
+
+    - name: Run Ansible Playbook
+      uses: dawidd6/action-ansible-playbook@v2.8.0
+      with:
+        playbook: deploy_webgoat.yml
+
+        directory: ./ansible
+
+        # Inventory file content
+        inventory: |
+          [webgoat_host]
+          ${{ vars.DEPLOYMENT_SERVER }} ansible_ssh_user=${{ vars.ANSIBLE_SSH_USER }} ansible_ssh_pass=${{ secrets.ANSIBLE_SSH_PASSWORD }}
