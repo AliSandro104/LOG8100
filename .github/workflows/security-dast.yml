@@ -3,7 +3,7 @@ name: Run DAST
 on:
   workflow_run:
     workflows:
-      - Staging Release Workflow
+      - staging
     types:
       - completed
 
