@@ -82,6 +82,9 @@
                   image: webgoat/webgoat:latest
                   ports:
                   - containerPort: 8080
+                  env:
+                  - name: TZ
+                    value: "America/Toronto"
                   securityContext:
                     runAsUser: 1000
                     runAsGroup: 1000
@@ -101,10 +104,6 @@
                 - name: webgoat-storage
                   persistentVolumeClaim:
                     claimName: webgoat-pvc
-      register: webgoat_deployment
-      changed_when: webgoat_deployment.result is defined and
-                    webgoat_deployment.result.object.status.updatedReplicas is defined and
-                    webgoat_deployment.result.object.status.updatedReplicas > 0
 
     - name: Expose WebGoat service internally
       kubernetes.core.k8s:
@@ -172,4 +171,3 @@
       poll: 0   # Don't wait for the command to finish
       ignore_errors: true  # Prevent failure if port-forward is already running
       register: port_forward_result
-      when: webgoat_deployment.changed
