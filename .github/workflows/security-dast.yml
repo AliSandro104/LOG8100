@@ -1,7 +1,11 @@
+name: Run DAST
+
 on:
-  push:
-    branches:
-      - 'release/**'
+  workflow_run:
+    workflows:
+      - Staging Release Workflow
+    types:
+      - completed
 
 jobs:
   zap_scan:
