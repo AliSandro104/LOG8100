@@ -1,1 +1,7 @@
 .env
+*.tfvars
+*.tfstate
+*.terraform
+*.backup
+*.hcl
+*.info
