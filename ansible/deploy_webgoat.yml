@@ -1,0 +1,170 @@
+---
+- hosts: localhost
+  connection: local
+  become: yes
+
+  tasks:
+    # Deploy WebGoat application
+    - name: Create WebGoat namespace
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: webgoat
+            labels:
+              owner: "team.force"
+
+    # Create Persistent Volume
+    - name: Create Persistent Volume for WebGoat
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: PersistentVolume
+          metadata:
+            name: webgoat-pv
+            labels:
+              app: webgoat
+          spec:
+            capacity:
+              storage: 5Gi
+            accessModes:
+              - ReadWriteMany
+            persistentVolumeReclaimPolicy: Delete
+            hostPath:
+              path: /mnt/data/webgoat
+
+    # Create Persistent Volume Claim
+    - name: Create Persistent Volume Claim for WebGoat
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            name: webgoat-pvc
+            namespace: webgoat
+          labels:
+            app: webgoat
+          spec:
+            accessModes:
+              - ReadWriteMany
+            resources:
+              requests:
+                storage: 5Gi
+            selector:
+              matchLabels:
+                app: webgoat
+            storageClassName: ""
+
+    - name: Create Kubernetes Deployment for WebGoat
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: webgoat
+            namespace: webgoat
+            labels:
+              app: webgoat
+          spec:
+            replicas: 3
+            selector:
+              matchLabels:
+                app: webgoat
+            template:
+              metadata:
+                labels:
+                  app: webgoat
+              spec:
+                containers:
+                - name: webgoat
+                  image: llalondedkhub/log8100-webgoat:latest
+                  ports:
+                  - containerPort: 8080
+                  securityContext:
+                    runAsUser: 1000
+                    runAsGroup: 1000
+                    fsGroup: 2000
+                    allowPrivilegeEscalation: false
+                  resources:
+                    limits:
+                      memory: "512Mi"
+                      cpu: "500m"
+                    requests:
+                      memory: "256Mi"
+                      cpu: "250m"
+                  volumeMounts:
+                  - name: webgoat-storage
+                    mountPath: /home/webgoat
+                volumes:
+                - name: webgoat-storage
+                  persistentVolumeClaim:
+                    claimName: webgoat-pvc
+
+    - name: Expose WebGoat service internally
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: webgoat-service
+            namespace: webgoat
+          spec:
+            selector:
+              app: webgoat
+            ports:
+              - protocol: TCP
+                port: 8080
+                targetPort: 8080
+            type: ClusterIP
+
+    # Check if TLS certificate already exists
+    - name: Check if TLS certificate secret exists
+      kubernetes.core.k8s_info:
+        kind: Secret
+        namespace: webgoat
+        name: webgoat-tls
+      register: tls_secret_check
+      failed_when: false  # Don't fail if the secret doesn't exist
+
+    # Create Ingress with Let's Encrypt TLS only if the certificate doesn't exist
+    - name: Create Ingress resource with Let's Encrypt TLS
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: webgoat-ingress
+            namespace: webgoat
+            annotations:
+              cert-manager.io/cluster-issuer: letsencrypt-production  # Use Let's Encrypt production issuer
+              nginx.ingress.kubernetes.io/ssl-redirect: "true"
+              nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+          spec:
+            ingressClassName: nginx
+            tls:
+              - hosts:
+                  - team-1-log8100-project.canadacentral.cloudapp.azure.com
+                secretName: webgoat-tls  # Cert-Manager creates this secret
+            rules:
+              - host: team-1-log8100-project.canadacentral.cloudapp.azure.com
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: webgoat-service
+                          port:
+                            number: 8080
+      when: tls_secret_check.resources | length == 0
+
+    # Run kubectl port-forward only if the WebGoat deployment is updated
+    - name: Run kubectl port-forward with nohup in the background
+      shell: "sudo nohup kubectl port-forward --address 0.0.0.0 service/nginx-ingress-ingress-nginx-controller -n ingress-nginx 80:80 443:443 > /tmp/port-forward.log 2>&1 &"
+      async: 1  # Run indefinitely
+      poll: 0   # Don't wait for the command to finish
+      ignore_errors: true  # Prevent failure if port-forward is already running
+      register: port_forward_result

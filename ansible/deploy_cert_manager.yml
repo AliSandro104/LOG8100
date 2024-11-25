@@ -1,0 +1,54 @@
+---
+- hosts: localhost
+  connection: local
+  become: yes
+
+  tasks:
+    - name: Ensure Minikube context is active
+      command: "kubectl config use-context minikube"
+      changed_when: false
+
+    - name: Add Cert-Manager Helm repository
+      command: "helm repo add jetstack https://charts.jetstack.io"
+      register: add_cert_manager_repo_result
+
+    - name: Update Helm repositories
+      command: "helm repo update"
+      register: repo_update_result_cert_manager
+
+    - name: Create cert-manager namespace with owner label
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: cert-manager
+            labels:
+              owner: "team.force"
+
+    - name: Install Cert-Manager using Helm
+      command: >
+        helm install cert-manager jetstack/cert-manager
+        --namespace cert-manager
+        --set installCRDs=true
+      register: cert_manager_install
+      changed_when: "'STATUS: deployed' in cert_manager_install.stdout"
+
+    - name: Create Let's Encrypt Production ClusterIssuer
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: cert-manager.io/v1
+          kind: ClusterIssuer
+          metadata:
+            name: letsencrypt-production
+          spec:
+            acme:
+              server: https://acme-v02.api.letsencrypt.org/directory
+              email: team-1-log8100@gmail.com
+              privateKeySecretRef:
+                name: letsencrypt-production-key
+              solvers:
+                - http01:
+                    ingress:
+                      class: nginx

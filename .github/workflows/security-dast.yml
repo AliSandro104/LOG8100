@@ -1,3 +1,5 @@
+name: Run DAST
+
 on:
   push:
     branches:

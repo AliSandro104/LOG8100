@@ -19,7 +19,25 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
+
+    # Setup Maven & compile App
+    - name: Set up JDK 21
+      uses: actions/setup-java@v3
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Cache Maven packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+
+    - name: Build with Maven
+      working-directory: ./WebGoat
+      run: ./mvnw clean install
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
@@ -30,6 +48,7 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
+    # Create release
     - name: Extract version from branch name
       id: extract_version
       run: echo "VERSION=${GITHUB_HEAD_REF#release/}" >> $GITHUB_ENV
@@ -54,12 +73,13 @@ jobs:
         draft: false
         prerelease: false
 
+    # Build and publish docker container
     - name: Build and push Docker image
       id: push
       uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
       with:
-        context: ./dvna
-        file: ./dvna/Dockerfile
+        context: ./WebGoat
+        file: ./WebGoat/Dockerfile
         push: true
         tags: |
           ${{ vars.DOCKER_NAMESPACE }}/${{ vars.DOCKER_REPOSITORY }}:${{ env.VERSION }}
@@ -72,3 +92,15 @@ jobs:
         subject-name: docker.io/${{ vars.DOCKER_NAMESPACE }}/${{ vars.DOCKER_REPOSITORY}}
         subject-digest: ${{ steps.push.outputs.digest }}
         push-to-registry: true
+
+    - name: Run Ansible Playbook
+      uses: dawidd6/action-ansible-playbook@v2.8.0
+      with:
+        playbook: deploy_webgoat.yml
+
+        directory: ./ansible
+
+        # Inventory file content
+        inventory: |
+          [webgoat_host]
+          ${{ vars.DEPLOYMENT_SERVER }} ansible_ssh_user=${{ vars.ANSIBLE_SSH_USER }} ansible_ssh_pass=${{ secrets.ANSIBLE_SSH_PASSWORD }}

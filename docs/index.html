@@ -13,7 +13,7 @@
             color: #333;
         }
         header {
-            background-color: #4CAF50;
+            background-color: #5b4caf;
             color: white;
             text-align: center;
             padding: 1em 0;
@@ -43,11 +43,20 @@
 <body>
 
 <header>
-    <h1>LOG8100 TP2</h1>
+    <h1>LOG8100 Project</h1>
 </header>
 
 <main>
-    <iframe src="./TP2_Equipe1.pdf"></iframe>
+    <div id="readme-content"></div>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        fetch('../README.md')
+            .then(response => response.text())
+            .then(text => {
+                document.getElementById('readme-content').innerHTML = 
+                    marked.parse(text);
+            });
+    </script>
 </main>
 
 <footer>

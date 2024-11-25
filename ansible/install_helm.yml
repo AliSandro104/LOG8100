@@ -1,0 +1,33 @@
+---
+- hosts: localhost
+  connection: local
+  become: yes
+  tasks:
+    - name: Ensure Minikube context is active
+      command: "kubectl config use-context minikube"
+      changed_when: false
+
+    - name: Download Helm binary
+      get_url:
+        url: "https://get.helm.sh/helm-v3.13.0-linux-amd64.tar.gz"
+        dest: "/tmp/helm-v3.13.0-linux-amd64.tar.gz"
+
+    - name: Extract the Helm archive
+      unarchive:
+        src: "/tmp/helm-v3.13.0-linux-amd64.tar.gz"
+        dest: "/tmp/"
+        remote_src: yes
+
+    - name: Move Helm binary to /usr/local/bin
+      copy:
+        src: "/tmp/linux-amd64/helm"
+        dest: "/usr/local/bin/helm"
+        mode: '0755'
+
+    - name: Verify Helm installation
+      command: "helm version"
+      register: helm_version_output
+
+    - name: Display Helm version
+      debug:
+        msg: "Helm installed successfully: {{ helm_version_output.stdout }}"
