@@ -7,11 +7,6 @@ on:
     branches:
       - 'release/**'
 
-permissions:
-  actions: write
-  contents: write
-  security-events: write
-
 jobs:
   push_to_registry:
     name: Push Staging Docker Image to Docker Hub
@@ -21,6 +16,9 @@ jobs:
       contents: read
       attestations: write
       id-token: write
+      security-events: write
+      actions: read
+
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
@@ -82,7 +80,7 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
-          timeout: '10m'
+          timeout: '15m'
           skip-files: '**/*.jar'
 
       - name: Upload Trivy scan results to GitHub Security tab

@@ -13,9 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
-      contents: write
+      contents: read
       attestations: write
       id-token: write
+      security-events: write
+      actions: read
 
     steps:
     - name: Checkout Code
