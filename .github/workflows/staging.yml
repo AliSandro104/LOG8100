@@ -8,7 +8,7 @@ on:
       - 'release/**'
 
 permissions:
-  security-events: write
+  actions: read
 
 jobs:
   push_to_registry:
