@@ -50,30 +50,10 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # Create release
+    # Extract version from branch name
     - name: Extract version from branch name
       id: extract_version
       run: echo "VERSION=${GITHUB_HEAD_REF#release/}" >> $GITHUB_ENV
-
-    - name: Create Git Tag
-      run: |
-        git config --global user.name "github-actions"
-        git config --global user.email "actions@github.com"
-        git tag -a "v${{ env.VERSION }}" -m "Release version ${{ env.VERSION }}"
-        git push origin "v${{ env.VERSION }}"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: v${{ env.VERSION }}
-        release_name: v${{ env.VERSION }}
-        draft: false
-        prerelease: false
 
     # Build and publish docker container
     - name: Build and push Docker image
@@ -115,6 +95,28 @@ jobs:
       if: always()
       with:
         sarif_file: 'trivy-results.sarif'
+
+    # Create Git Tag
+    - name: Create Git Tag
+      run: |
+        git config --global user.name "github-actions"
+        git config --global user.email "actions@github.com"
+        git tag -a "v${{ env.VERSION }}" -m "Release version ${{ env.VERSION }}"
+        git push origin "v${{ env.VERSION }}"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # Create release
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ env.VERSION }}
+        release_name: v${{ env.VERSION }}
+        draft: false
+        prerelease: false
 
     # Update the application on the deployment server
     - name: Run Ansible Playbook
