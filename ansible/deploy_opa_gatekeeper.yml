@@ -168,6 +168,82 @@
             parameters:
               limits: ["cpu", "memory"]
 
+
+    - name: Create Container Security Template
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: templates.gatekeeper.sh/v1
+          kind: ConstraintTemplate
+          metadata:
+            name: k8scontainersecurity
+          spec:
+            crd:
+              spec:
+                names:
+                  kind: K8sContainerSecurity
+            targets:
+              - target: admission.k8s.gatekeeper.sh
+                rego: |
+                  package k8scontainersecurity
+                  violation[{"msg": msg}] {
+                    container := input.review.object.spec.containers[_]
+                    container.securityContext.privileged
+                    msg := sprintf("privileged containers are not allowed: %v", [container.name])
+                  }
+
+    - name: Apply Non-Root Container Security Constraint
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: constraints.gatekeeper.sh/v1beta1
+          kind: K8sContainerSecurity
+          metadata:
+            name: require-non-root
+          spec:
+            match:
+              kinds:
+                - apiGroups: [""]
+                  kinds: ["Pod"]
+            parameters:
+              runAsNonRoot: true
+
+    - name: Create Naming Rules Template
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: templates.gatekeeper.sh/v1
+          kind: ConstraintTemplate
+          metadata:
+            name: k8snamingrules
+          spec:
+            crd:
+              spec:
+                names:
+                  kind: K8sNamingRules
+            targets:
+              - target: admission.k8s.gatekeeper.sh
+                rego: |
+                  package k8snamingrules
+                  violation[{"msg": msg}] {
+                    not regex.match("^[a-z0-9][a-z0-9-]*[a-z0-9]$", input.review.object.metadata.name)
+                    msg := sprintf("name must match regex ^[a-z0-9][a-z0-9-]*[a-z0-9]$: %v", [input.review.object.metadata.name])
+                  }
+                  
+    - name: Apply Naming Rules Constraint
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: constraints.gatekeeper.sh/v1beta1
+          kind: K8sNamingRules
+          metadata:
+            name: require-naming-convention
+          spec:
+            match:
+              kinds:
+                - apiGroups: [""]
+                  kinds: ["Pod", "Deployment", "Service", "StatefulSet"]
+
     - name: Verify Constraints
       kubernetes.core.k8s_info:
         kind: Constraint
