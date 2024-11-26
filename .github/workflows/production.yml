@@ -97,6 +97,7 @@ jobs:
 
     # Run Trivy vulnerability scanner
     - name: Run Trivy vulnerability scanner
+      id: trivy-scan
       uses: aquasecurity/trivy-action@master
       with:
         image-ref: ${{ vars.DOCKER_NAMESPACE }}/${{ vars.DOCKER_REPOSITORY }}:${{ env.VERSION }}
@@ -105,7 +106,7 @@ jobs:
         exit-code: '1'
         ignore-unfixed: true
         vuln-type: 'os,library'
-        severity: 'CRITICAL'
+        severity: 'CRITICAL,HIGH'
         timeout: '15m'
         skip-files: '**/*.jar'
 
@@ -117,6 +118,7 @@ jobs:
 
     # Update the application on the deployment server
     - name: Run Ansible Playbook
+      if: steps.trivy-scan.outcome == 'success'
       uses: dawidd6/action-ansible-playbook@v2.8.0
       with:
         playbook: deploy_webgoat.yml
