@@ -154,8 +154,8 @@ resource "azurerm_linux_virtual_machine" "vm" {
       "sudo apt-get install -y software-properties-common",
       "sudo apt-add-repository --yes --update ppa:ansible/ansible",
       "sudo apt-get install -y ansible",
-      "sudo git clone {{var.iac_remote_repository_url}} /opt/iac"
-      "cd /opt/iac/ansible"
+      "sudo git clone {{var.iac_remote_repository_url}} /opt/iac",
+      "cd /opt/iac/ansible",
       "sudo ansible-playbook master.yml"
     ]
   }
