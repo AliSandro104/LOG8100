@@ -105,7 +105,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   name                = "Log8100WebGoat"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
-  size                = "Standard_B2s"
+  size                = "Standard_B2ms"
 
   admin_username      = var.admin_username
   admin_password      = var.admin_password
@@ -154,8 +154,8 @@ resource "azurerm_linux_virtual_machine" "vm" {
       "sudo apt-get install -y software-properties-common",
       "sudo apt-add-repository --yes --update ppa:ansible/ansible",
       "sudo apt-get install -y ansible",
-      "sudo git clone {{var.iac_remote_repository_url}} /opt/iac"
-      "cd /opt/iac/ansible"
+      "sudo git clone {{var.iac_remote_repository_url}} /opt/iac",
+      "cd /opt/iac/ansible",
       "sudo ansible-playbook master.yml"
     ]
   }

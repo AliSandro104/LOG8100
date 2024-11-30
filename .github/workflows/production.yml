@@ -98,6 +98,7 @@ jobs:
 
     # Create Git Tag
     - name: Create Git Tag
+      if: steps.trivy-scan.outcome == 'success'
       run: |
         git config --global user.name "github-actions"
         git config --global user.email "actions@github.com"
@@ -109,6 +110,7 @@ jobs:
     # Create release
     - name: Create Release
       id: create_release
+      if: steps.trivy-scan.outcome == 'success'
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
