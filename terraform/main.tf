@@ -105,7 +105,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   name                = "Log8100WebGoat"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
-  size                = "Standard_B2s"
+  size                = "Standard_B2ms"
 
   admin_username      = var.admin_username
   admin_password      = var.admin_password
