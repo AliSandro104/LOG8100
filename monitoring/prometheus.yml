@@ -795,8 +795,17 @@ serverFiles:
     scrape_configs:
       - job_name: prometheus
         static_configs:
-          - targets:
-            - localhost:9090
+          - targets: ['localhost:9090']
+      - job_name: webgoat
+        metrics_path: /WebGoat/actuator/health
+        static_configs:
+          - targets: ['team-1-log8100-project.canadacentral.cloudapp.azure.com:443']
+        scheme: https
+        tls_config:
+          insecure_skip_verify: true
+      - job_name: kube-state-metrics
+        static_configs:
+          - targets: ['kube-state-metrics.prometheus.svc.cluster.local:8080']
 
       # A scrape configuration for running Prometheus on a Kubernetes cluster.
       # This uses separate scrape configs for cluster components (i.e. API server, node)

@@ -1,4 +1,19 @@
-helm show values prometheus-community/prometheus > monitoring/prometheus.yaml
-helm upgrade prometheus prometheus-community/prometheus -f monitoring/prometheus.yaml
+Prometheus
+helm upgrade prometheus prometheus-community/prometheus -f monitoring/prometheus.yml
 export POD_NAME=$(kubectl get pods --namespace default -l "app.kubernetes.io/name=prometheus,app.kubernetes.io/instance=prometheus" -o jsonpath="{.items[0].metadata.name}")
 kubectl --namespace default port-forward $POD_NAME 9090
+
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm install prometheus prometheus-community/prometheus -f prometheus.yml -n prometheus
+helm upgrade prometheus prometheus-community/prometheus -f prometheus.yml -n prometheus
+export POD_NAME=$(kubectl get pods --namespace prometheus -l "app.kubernetes.io/name=prometheus,app.kubernetes.io/instance=prometheus" -o jsonpath="{.items[0].metadata.name}")
+sudo nohup kubectl port-forward --address 0.0.0.0 service/prometheus-server -n prometheus 9090:80 > /tmp/port-forward-prometheus.log 2>&1 &
+
+Grafana
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+helm install grafana grafana/grafana --namespace grafana --create-namespace
+kubectl get secret --namespace grafana grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+sudo nohup kubectl port-forward --address 0.0.0.0 --namespace grafana service/grafana 3000:80 > /tmp/port-forward-grafana.log 2>&1 &
+
+Dans Grafana, importer dashboard kubernetes (ID 1860) ou Kube-state-metrics (ID 8588)
