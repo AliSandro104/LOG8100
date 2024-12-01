@@ -26,3 +26,6 @@
   
   - name: Include Prometheus setup playbook
     import_playbook: deploy_prometheus.yml
+
+  - name: Include Grafana setup playbook
+    import_playbook: deploy_grafana.yml

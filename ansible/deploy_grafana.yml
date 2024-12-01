@@ -1,0 +1,23 @@
+---
+- hosts: localhost
+  connection: local
+  become: yes
+  tasks:
+    - name: Add Grafana Helm repository
+      shell: |
+        helm repo add grafana https://grafana.github.io/helm-charts
+        helm repo update
+      args:
+        executable: /bin/bash
+
+    - name: Install Grafana using Helm
+      shell: |
+        helm install grafana grafana/grafana --namespace grafana --create-namespace
+      args:
+        executable: /bin/bash
+
+    - name: Set up port-forwarding for Grafana
+      shell: |
+        kubectl port-forward --address 0.0.0.0 --namespace grafana service/grafana 3000:80
+      args:
+        executable: /bin/bash
