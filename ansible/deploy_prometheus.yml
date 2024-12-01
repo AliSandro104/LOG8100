@@ -3,64 +3,88 @@
   connection: local
   become: yes
   tasks:
-  - name: Add Prometheus Helm repository
-    command: >
-      helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-    args:
-      chdir: /tmp
+    - name: Add Prometheus Helm repository
+      command: >
+        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+      args:
+        chdir: /tmp
 
-  - name: Update Helm repositories
-    command: helm repo update
-    args:
-      chdir: /tmp
+    - name: Update Helm repositories
+      command: helm repo update
+      args:
+        chdir: /tmp
 
-  - name: Create Prometheus configuration file
-    copy:
-      dest: /etc/prometheus/prometheus.yml
-      content: |
-        global:
-          scrape_interval: 15s
-          evaluation_interval: 15s
-        scrape_configs:
-          - job_name: prometheus
-            static_configs:
-              - targets: ['localhost:9090']
-          - job_name: webgoat
-            metrics_path: '/WebGoat/actuator/prometheus'
-            static_configs:
-              - targets: ['team-1-log8100-project.canadacentral.cloudapp.azure.com']
-            scheme: https
-            tls_config:
-              insecure_skip_verify: true
-          - job_name: kube-state-metrics
-            static_configs:
-              - targets: ['kube-state-metrics.prometheus.svc.cluster.local:8080']
+    - name: Create Prometheus configuration file (prometheus.yml)
+      copy:
+        dest: /etc/prometheus/prometheus.yml
+        content: |
+          global:
+            scrape_interval: 15s
+            evaluation_interval: 15s
+          scrape_configs:
+            - job_name: 'prometheus'
+              static_configs:
+                - targets: ['localhost:9090']
+            - job_name: 'webgoat'
+              metrics_path: '/WebGoat/actuator/prometheus'
+              kubernetes_sd_configs:
+                - role: service
+                  namespaces:
+                    names:
+                      - webgoat
+              scheme: https
+              tls_config:
+                insecure_skip_verify: true
+            - job_name: kube-state-metrics
+              static_configs:
+                - targets: ['kube-state-metrics.prometheus.svc.cluster.local:8080']
 
-  - name: Create Prometheus namespace
-    command: kubectl create namespace prometheus
-    args:
-      chdir: /tmp
-    register: namespace_creation
-    failed_when: namespace_creation.rc != 0 and "already exists" not in namespace_creation.stderr
+    - name: Create Prometheus Helm values file (values.yaml)
+      copy:
+        dest: /etc/prometheus/values.yaml
+        content: |
+          server:
+            resources:
+              limits:
+                memory: "2Gi"
+                cpu: "1"
+              requests:
+                memory: "1Gi"
+                cpu: "500m"
+            extraArgs:
+              config.file: /etc/prometheus/prometheus.yml
 
-  - name: Install Prometheus using Helm
-    command: >
-      helm install prometheus prometheus-community/prometheus -f /etc/prometheus/prometheus.yml -n prometheus
-    args:
-      chdir: /tmp
-    register: helm_install_output
-    failed_when: helm_install_output.rc != 0 and "already exists" not in helm_install_output.stderr
+    - name: Create Prometheus namespace
+      command: kubectl create namespace prometheus
+      args:
+        chdir: /tmp
+      register: namespace_creation
+      failed_when: namespace_creation.rc != 0 and "already exists" not in namespace_creation.stderr
 
-  - name: Upgrade Prometheus using Helm
-    command: >
-      helm upgrade prometheus prometheus-community/prometheus -f /etc/prometheus/prometheus.yml -n prometheus
-    args:
-      chdir: /tmp
+    - name: Install Prometheus using Helm with custom configurations
+      shell: |
+        helm install prometheus prometheus-community/prometheus \
+          -f /etc/prometheus/values.yaml \
+          --namespace prometheus \
+          --set-file serverFiles.prometheus.yml=/etc/prometheus/prometheus.yml
+      args:
+        executable: /bin/bash
+      register: helm_install_output
+      failed_when: helm_install_output.rc != 0 and "already exists" not in helm_install_output.stderr
 
-  - name: Forward Prometheus port
-    shell: >
-      kubectl port-forward --address 0.0.0.0 service/prometheus-server -n prometheus 9090:80
-    args:
-      executable: /bin/bash
-    async: 10
-    poll: 0
+    - name: Upgrade Prometheus using Helm
+      shell: |
+        helm upgrade prometheus prometheus-community/prometheus \
+          -f /etc/prometheus/values.yaml \
+          --namespace prometheus \
+          --set-file serverFiles.prometheus.yml=/etc/prometheus/prometheus.yml
+      args:
+        executable: /bin/bash
+
+    - name: Forward Prometheus port
+      shell: |
+        sudo nohup kubectl port-forward --address 0.0.0.0 service/prometheus-server -n prometheus 9090:80 > /tmp/port-forward-prometheus.log 2>&1 &
+      args:
+        executable: /bin/bash
+      async: 10
+      poll: 0
