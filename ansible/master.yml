@@ -23,3 +23,6 @@
 
   - name: Include WebGoat setup playbook
     import_playbook: deploy_webgoat.yml
+  
+  - name: Include Prometheus setup playbook
+    import_playbook: deploy_prometheus.yml
