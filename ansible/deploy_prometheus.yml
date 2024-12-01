@@ -32,12 +32,12 @@
                   namespaces:
                     names:
                       - webgoat
-              scheme: https
-              tls_config:
-                insecure_skip_verify: true
-            - job_name: kube-state-metrics
-              static_configs:
-                - targets: ['kube-state-metrics.prometheus.svc.cluster.local:8080']
+            - job_name: 'kube-state-metrics'
+              kubernetes_sd_configs:
+                - role: service
+                  namespaces:
+                    names:
+                      - prometheus
 
     - name: Create Prometheus Helm values file (values.yaml)
       copy:
