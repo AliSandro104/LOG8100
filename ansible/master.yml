@@ -29,3 +29,6 @@
 
   - name: Include Grafana setup playbook
     import_playbook: deploy_grafana.yml
+
+  - name: Include AlertManager setup playbook
+    import_playbook: deploy_alertmanager.yml

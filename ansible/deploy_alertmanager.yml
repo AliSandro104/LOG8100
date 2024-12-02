@@ -1,0 +1,99 @@
+- hosts: localhost
+  connection: local
+  become: yes
+  tasks:
+    - name: Add Prometheus Helm repository
+      command: >
+        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+      args:
+        chdir: /tmp
+    - name: Update Helm repositories
+      command: helm repo update
+      args:
+        chdir: /tmp
+        
+    - name: Create Alertmanager configuration file (alertmanager.yml)
+      copy:
+        dest: /etc/alertmanager/alertmanager.yml
+        content: |
+          route:
+            group_by: ['alertname', 'job']
+
+            group_wait: 30s
+            group_interval: 5m
+            repeat_interval: 3h
+
+            receiver: discord
+
+          receivers:
+          - name: discord
+            discord_configs:
+            - webhook_url: https://discord.com/api/webhooks/1312455033023103026/OqiAwUIxS72XOankTQT3UWDktFzmmn9Qm0Ex-1NsBZyuMxwdvuucj0kmr5Hv_xprcey6
+
+    - name: Create Alertmanager Helm values file (values.yaml)
+      copy:
+        dest: /etc/alertmanager/values.yaml
+        content: |
+          configmapReload:
+            resources:
+              limits:
+                memory: "128Mi"
+                cpu: "100m"
+              requests:
+                memory: "64Mi"
+                cpu: "50m"
+          alertmanager:
+            alertmanagerSpec:
+              replicas: 1
+              configSecret:
+                name: alertmanager-config
+              resources:
+                limits:
+                  memory: "512Mi"
+                  cpu: "250m"
+                requests:
+                  memory: "256Mi"
+                  cpu: "100m"
+
+    - name: Create Alertmanager namespace
+      command: kubectl create namespace alertmanager
+      args:
+        chdir: /tmp
+      register: namespace_creation
+      failed_when: namespace_creation.rc != 0 and "already exists" not in namespace_creation.stderr
+
+    - name: Create ConfigMap for Alertmanager configuration
+      shell: |
+        kubectl create configmap alertmanager-config \
+          --from-file=/etc/alertmanager/alertmanager.yml \
+          -n alertmanager
+      args:
+        executable: /bin/bash
+      register: configmap_creation
+      failed_when: configmap_creation.rc != 0 and "already exists" not in configmap_creation.stderr
+
+    - name: Install Alertmanager using Helm with custom configurations
+      shell: |
+        helm install alertmanager prometheus-community/alertmanager \
+          -f /etc/alertmanager/values.yaml \
+          --namespace alertmanager
+      args:
+        executable: /bin/bash
+      register: helm_install_output
+      failed_when: helm_install_output.rc != 0 and "already exists" not in helm_install_output.stderr
+
+    - name: Upgrade Alertmanager using Helm
+      shell: |
+        helm upgrade alertmanager prometheus-community/alertmanager \
+          -f /etc/alertmanager/values.yaml \
+          --namespace alertmanager
+      args:
+        executable: /bin/bash
+
+    - name: Forward Alertmanager port
+      shell: |
+        sudo nohup kubectl port-forward --address 0.0.0.0 service/alertmanager -n alertmanager 9093:9093 > /tmp/port-forward-alertmanager.log 2>&1 &
+      args:
+        executable: /bin/bash
+      async: 10
+      poll: 0

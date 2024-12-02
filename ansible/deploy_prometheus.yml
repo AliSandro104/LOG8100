@@ -21,6 +21,13 @@
           global:
             scrape_interval: 15s
             evaluation_interval: 15s
+          alerting:
+          alertmanagers:
+            - static_configs:
+                - targets:
+                    - 'alertmanager:9093'
+          rule_files:
+            - "/etc/prometheus/demo-alerts.yml"
           scrape_configs:
             - job_name: 'prometheus'
               static_configs:
@@ -60,6 +67,22 @@
         chdir: /tmp
       register: namespace_creation
       failed_when: namespace_creation.rc != 0 and "already exists" not in namespace_creation.stderr
+
+    - name: Create Prometheus alert rules file (demo-alerts.yml)
+    copy:
+      dest: /etc/prometheus/demo-alerts.yml
+      content: |
+        groups:
+        - name: webgoat_alerts
+          rules:
+          - alert: HighCPUUsage
+            expr: process_cpu_seconds_total > 10
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "High CPU usage detected"
+              description: "CPU usage is above 10s in the last minute."
 
     - name: Install Prometheus using Helm with custom configurations
       shell: |
