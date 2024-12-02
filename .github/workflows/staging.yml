@@ -71,13 +71,13 @@ jobs:
 
       # Run Trivy vulnerability scanner
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@7b7aa264d83dc58691451798b4d117d53d21edfe
         with:
           image-ref: ${{ vars.DOCKER_NAMESPACE }}/${{ vars.DOCKER_REPOSITORY }}:${{ env.VERSION }}
-          format: 'sarif'
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
           output: 'trivy-results.sarif'
           exit-code: '0'
-          ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
           timeout: '15m'
