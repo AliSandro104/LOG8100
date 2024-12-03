@@ -32,6 +32,7 @@
         helm install nginx-ingress ingress-nginx/ingress-nginx
         --namespace ingress-nginx
         --set controller.service.type=LoadBalancer
+        --create-namespace
       register: nginx_ingress_install
       changed_when: "'STATUS: deployed' in nginx_ingress_install.stdout"
 

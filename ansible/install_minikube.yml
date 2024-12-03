@@ -30,7 +30,7 @@
       changed_when: false
 
     - name: Start Minikube with 2 nodes and RBAC enabled
-      command: "sudo minikube start --nodes 2 --driver=docker --force"
+      command: "sudo minikube start --nodes 2 --driver=docker --memory=8192 --force"
 
     - name: Wait for Minikube to be ready
       command: "minikube status"
@@ -55,7 +55,7 @@
           Type=oneshot
           RemainAfterExit=yes
           User=root
-          ExecStart=/usr/local/bin/minikube start --nodes 2 --driver=docker
+          ExecStart=/usr/local/bin/minikube start --nodes 4 --driver=docker
           ExecStop=/usr/local/bin/minikube stop
           
           [Install]
@@ -80,3 +80,31 @@
     - name: Display service status
       debug:
         msg: "{{ service_status.stdout_lines }}"
+
+    - name: Get all nodes
+      kubernetes.core.k8s_info:
+        kind: Node
+        api_version: v1
+      register: nodes_list
+
+    - name: Label first node as master
+      kubernetes.core.k8s:
+        state: present
+        kind: Node
+        name: "{{ nodes_list.resources[0].metadata.name }}"
+        definition:
+          metadata:
+            labels:
+              node-role: master
+      when: nodes_list.resources | length > 0
+
+    - name: Label second node as slave
+      kubernetes.core.k8s:
+        state: present
+        kind: Node
+        name: "{{ nodes_list.resources[1].metadata.name }}"
+        definition:
+          metadata:
+            labels:
+              node-role: slave
+      when: nodes_list.resources | length > 1
