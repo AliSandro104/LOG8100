@@ -1,0 +1,25 @@
+alertmanager:
+  enabled: true
+  persistence:
+    size: 2Gi
+  podSecurityContext:
+    runAsUser: 65534
+    runAsNonRoot: true
+    runAsGroup: 65534
+    fsGroup: 65534
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      group_by: ['alertname', 'job']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 3h
+      receiver: discord
+    receivers:
+      - name: discord
+        discord_configs:
+          - webhook_url: '{{ `{{ .Values.discord.webhookURL }}` }}'
+  extraSecret:
+    name: discord-webhook
+    key: webhook-url

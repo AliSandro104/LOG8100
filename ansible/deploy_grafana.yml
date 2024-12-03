@@ -22,6 +22,6 @@
 
     - name: Install Grafana using Helm
       shell: |
-        helm install grafana grafana/grafana --namespace grafana -f /opt/iac/ansible/store/grafana/values.yml
+        helm install grafana grafana/grafana --namespace grafana -f /opt/iac/ansible/store/grafana/*
       args:
         executable: /bin/bash

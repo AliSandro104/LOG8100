@@ -1,0 +1,15 @@
+server:
+  global:
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    evaluation_interval: 1m
+  resources:
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+  alertmanagers:
+  - static_configs:
+    - targets: ['prometheus-alertmanager.prometheus.svc:9093']
