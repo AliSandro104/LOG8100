@@ -19,4 +19,7 @@ alertmanager:
     receivers:
       - name: discord
         discord_configs:
-          - webhook_url: https://discord.com/api/webhooks/1312455033023103026/OqiAwUIxS72XOankTQT3UWDktFzmmn9Qm0Ex-1NsBZyuMxwdvuucj0kmr5Hv_xprcey6
+          - webhook_url: '{{ `{{ .Values.discord.webhookURL }}` }}'
+  extraSecret:
+    name: discord-webhook
+    key: webhook-url

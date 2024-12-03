@@ -20,6 +20,19 @@
             labels:
               owner: "team.force"
 
+    - name: Create Discord webhook secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: discord-webhook
+            namespace: prometheus
+          type: Opaque
+          stringData:
+            webhook-url: "{{ discord_webhook_url }}"
+
     - name: Install Prometheus using Helm with custom configurations
       shell: |
         helm install prometheus prometheus-community/prometheus \
