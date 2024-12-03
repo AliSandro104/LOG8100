@@ -10,26 +10,18 @@
       args:
         executable: /bin/bash
 
-    - name: Create custom grafana-values.yaml for Grafana resources
-      copy:
-        dest: /tmp/grafana-values.yaml
-        content: |
-          resources:
-            limits:
-              memory: "512Mi"
-              cpu: "500m"
-            requests:
-              memory: "256Mi"
-              cpu: "250m"
+    - name: Create Grafana namespace
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: grafana
+            labels:
+              owner: "team.force"
 
     - name: Install Grafana using Helm
       shell: |
-        helm install grafana grafana/grafana --namespace grafana --create-namespace -f /tmp/grafana-values.yaml
-      args:
-        executable: /bin/bash
-
-    - name: Set up port-forwarding for Grafana
-      shell: |
-        sudo nohup kubectl port-forward --address 0.0.0.0 --namespace grafana service/grafana 3000:80 > /tmp/port-forward-grafana.log 2>&1 &
+        helm install grafana grafana/grafana --namespace grafana -f /opt/iac/ansible/store/grafana/values.yml
       args:
         executable: /bin/bash
