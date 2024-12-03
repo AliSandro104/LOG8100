@@ -23,7 +23,7 @@
     - name: Install Prometheus using Helm with custom configurations
       shell: |
         helm install prometheus prometheus-community/prometheus \
-          -f /opt/iac/ansible/store/prometheus/values.yml \
+          -f /opt/iac/ansible/store/prometheus/* \
           --namespace prometheus
       args:
         executable: /bin/bash
