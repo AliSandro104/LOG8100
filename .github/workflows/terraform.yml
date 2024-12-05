@@ -2,11 +2,15 @@ name: 'Terraform Azure Deployment'
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
+      - master
     paths:
       - 'terraform/**'
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
+      - master
     paths:
       - 'terraform/**'
   workflow_dispatch:

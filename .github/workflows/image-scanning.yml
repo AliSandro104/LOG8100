@@ -1,6 +1,6 @@
 # Taken and adapted from https://docs.github.com/en/actions/use-cases-and-examples/publishing-packages/publishing-docker-images#prerequisites
 
-name: Staging Release Workflow
+name: Image Build, Publish and Scanning
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   push_to_registry:
-    name: Push Staging Docker Image to Docker Hub
+    name: Build, Publish and Scan Docker Image 
     runs-on: ubuntu-latest
     permissions:
       packages: write
