@@ -1,4 +1,4 @@
-name: Production Release Workflow
+name: Delivery Release Workflow
 
 on:
   pull_request:
