@@ -1,0 +1,20 @@
+name: Ansible Deployment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Run Ansible Playbook
+        uses: dawidd6/action-ansible-playbook@v2.8.0
+        with:
+          playbook: deploy_webgoat.yml
+          directory: ./ansible
+          inventory: |
+            [webgoat_host]
+            ${{ vars.DEPLOYMENT_SERVER }} ansible_ssh_user=${{ vars.ANSIBLE_SSH_USER }} ansible_ssh_pass=${{ secrets.ANSIBLE_SSH_PASSWORD }}

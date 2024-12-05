@@ -120,17 +120,3 @@ jobs:
         release_name: v${{ env.VERSION }}
         draft: false
         prerelease: false
-
-    # Update the application on the deployment server
-    - name: Run Ansible Playbook
-      if: steps.trivy-scan.outcome == 'success'
-      uses: dawidd6/action-ansible-playbook@v2.8.0
-      with:
-        playbook: deploy_webgoat.yml
-
-        directory: ./ansible
-
-        # Inventory file content
-        inventory: |
-          [webgoat_host]
-          ${{ vars.DEPLOYMENT_SERVER }} ansible_ssh_user=${{ vars.ANSIBLE_SSH_USER }} ansible_ssh_pass=${{ secrets.ANSIBLE_SSH_PASSWORD }}
