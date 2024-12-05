@@ -29,3 +29,6 @@
 
   - name: Include Grafana setup playbook
     import_playbook: deploy_grafana.yml
+
+  - name: Include Kubecost setup playbook
+    import_playbook: deploy_kubecost.yml
