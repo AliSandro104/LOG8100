@@ -25,8 +25,7 @@
         helm install kubecost \
           --repo https://kubecost.github.io/cost-analyzer/ cost-analyzer \
           --namespace kubecost \
-          --set global.prometheus.fqdn=http://prometheus-server.prometheus.svc:9090 \
-          --set global.prometheus.enabled=false \
-          --set grafana.enabled=false
+          --set global.prometheus.fqdn=http://prometheus-server.prometheus.svc:80 \
+          --set global.prometheus.enabled=false
       args:
         executable: /bin/bash

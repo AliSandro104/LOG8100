@@ -27,7 +27,7 @@ start_port_forward() {
             sudo nohup kubectl port-forward --address 0.0.0.0 --namespace grafana service/grafana 3000:80 > /tmp/port-forward-grafana.log 2>&1 &
             ;;
         "kubecost")
-            sudo nohup kubectl port-forward --address 0.0.0.0 --namespace kubecost service/kubecost 9095:80 > /tmp/port-forward-kubecost.log 2>&1 &
+            sudo nohup kubectl port-forward --address 0.0.0.0 --namespace kubecost service/kubecost-cost-analyzer 9095:9090 > /tmp/port-forward-kubecost.log 2>&1 &
             ;;
     esac
     sleep 5  # Wait for process to start
