@@ -2,11 +2,21 @@ name: Ansible Deployment
 
 on:
   workflow_dispatch:
+    inputs:
+      secret_token:
+        description: 'Secret token for authorization'
+        required: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Validate Secret Token
+        if: ${{ github.event.inputs.secret_token != secrets.MANAGER_SECRET_TOKEN }}
+        run: |
+          echo "Invalid secret token."
+          exit 1
+
       - name: Checkout code
         uses: actions/checkout@v4
         
