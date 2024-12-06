@@ -3,6 +3,43 @@ serverFiles:
     groups:
     - name: webgoat_alerts
       rules:
+      - alert: HighHTTPErrorRate
+        expr: |
+          sum(rate(http_server_requests_seconds_count{
+            status=~"5..",
+            job="webgoat"
+          }[1m])) by (service)
+          /
+          sum(rate(http_server_requests_seconds_count{
+            job="webgoat"
+          }[1m])) by (service) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: "webgoat-service"
+          team: "team-name"
+        annotations:
+          summary: "High HTTP error rate for {{ $labels.service }}"
+          description: "Service {{ $labels.service }} has a 5xx error rate of {{ $value | humanize }}% over the last 2 minutes"
+
+      - alert: SlowHTTPRequests
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_server_requests_seconds_bucket{
+              job="webgoat"
+            }[5m])) by (le, service)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: "webgoat-service"
+          team: "team-name"
+        annotations:
+          summary: "Slow responses from {{ $labels.service }}"
+          description: "Service {{ $labels.service }} has a 95th percentile latency of {{ $value | humanize }}s over the last 5 minutes"
+
+    - name: k8s_system_alerts
+      rules:
       - alert: HighCPUUsage
         expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
         for: 15m
@@ -21,32 +58,15 @@ serverFiles:
           summary: "High memory usage detected"
           description: "Memory usage exceeds 500 MB."
 
-      - alert: HighHTTPErrorRate
-        expr: rate(http_server_requests_seconds_count{status=~"5.."}[1m]) > 0.1
-        for: 2m
-        labels:
-          severity: critical
-        annotations:
-          summary: "High HTTP error rate detected"
-          description: "The HTTP 5xx error rate is above 0.1 requests per second."
-
-      - alert: SlowHTTPRequests
-        expr: histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[1m])) by (le)) > 2
-        for: 1m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Slow HTTP request response time"
-          description: "95th percentile response time for HTTP requests exceeds 2 seconds."
-
       - alert: LowDiskSpace
         expr: node_filesystem_avail_bytes / node_filesystem_size_bytes < 0.1
         for: 5m
         labels:
           severity: critical
         annotations:
-          summary: "Low disk space on WebGoat node"
-          description: "Disk space on WebGoat node is below 10%."
+          summary: "Low disk space on node"
+          description: "Disk space on node is below 10%."
+          
           
   prometheus.yml:
     rule_files:
