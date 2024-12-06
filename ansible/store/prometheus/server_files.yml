@@ -4,13 +4,13 @@ serverFiles:
     - name: webgoat_alerts
       rules:
       - alert: HighCPUUsage
-        expr: process_cpu_seconds_total > 10
-        for: 1m
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 15m
         labels:
-          severity: critical
+          severity: warning
         annotations:
-          summary: "High CPU usage detected"
-          description: "CPU usage is above 10s in the last minute."
+          summary: "High CPU Usage on {{ $labels.instance }}"
+          description: "CPU usage has exceeded 85% on {{ $labels.instance }} for more than 15 minutes.\nCurrent value: {{ $value }}%"
 
       - alert: HighMemoryUsage
         expr: process_resident_memory_bytes > 500000000
