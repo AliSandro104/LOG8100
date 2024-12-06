@@ -8,35 +8,61 @@ serverFiles:
           sum(rate(http_server_requests_seconds_count{
             status=~"5..",
             job="webgoat"
-          }[1m])) by (service)
+          }[1m])) by (job)
           /
           sum(rate(http_server_requests_seconds_count{
             job="webgoat"
-          }[1m])) by (service) > 0.05
+          }[1m])) by (job) > 0.05
         for: 2m
         labels:
           severity: critical
           service: "webgoat-service"
           team: "team-name"
         annotations:
-          summary: "High HTTP error rate for {{ $labels.service }}"
-          description: "Service {{ $labels.service }} has a 5xx error rate of {{ $value | humanize }}% over the last 2 minutes"
+          summary: "High HTTP error rate for {{ $labels.job }}"
+          description: "Service {{ $labels.job }} has a 5xx error rate of {{ $value | humanize }}% over the last 2 minutes"
 
-      - alert: SlowHTTPRequests
+      - alert: SlowSecuredRequests
         expr: |
-          histogram_quantile(0.95,
-            sum(rate(http_server_requests_seconds_bucket{
-              job="webgoat"
-            }[5m])) by (le, service)
-          ) > 2
+          sum(rate(spring_security_http_secured_requests_seconds_sum{job="webgoat"}[5m]))
+          /
+          sum(rate(spring_security_http_secured_requests_seconds_count{job="webgoat"}[5m]))
+          > 2
         for: 5m
         labels:
           severity: warning
-          service: "webgoat-service"
-          team: "team-name"
         annotations:
-          summary: "Slow responses from {{ $labels.service }}"
-          description: "Service {{ $labels.service }} has a 95th percentile latency of {{ $value | humanize }}s over the last 5 minutes"
+          summary: "High average latency in WebGoat secured requests"
+          description: "Average secured request duration is {{ $value | humanize }}s over the last 5m"
+
+    - name: k8s_system_alerts
+      rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU Usage on {{ $labels.instance }}"
+          description: "CPU usage has exceeded 85% on {{ $labels.instance }} for more than 15 minutes.\nCurrent value: {{ $value }}%"
+
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes > 500000000
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage exceeds 500 MB."
+
+      - alert: LowDiskSpace
+        expr: node_filesystem_avail_bytes / node_filesystem_size_bytes < 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low disk space on node"
+          description: "Disk space on node is below 10%."
 
     - name: k8s_system_alerts
       rules:
