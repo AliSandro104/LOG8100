@@ -1,11 +1,5 @@
 # LOG8100 - DevSecOps
 
-## Overview
-
-This repository encapsulates the source code, artifacts and documentation of the LOG8100 TPs.
-
-**Primary authors:** Louis Lalonde [@louislalonde](https://github.com/LouisLalonde), Andy Chen [@AnOddWobbuffet](https://github.com/AnOddWobbuffet) and Ali Hazime [@AliSandro104](https://github.com/AliSandro104)
-
 ## Introduction
 
 Ce projet dans le cadre du cours LOG8100: DevSecOps consiste à automatiser le déploiement de l'application OWASP WebGoat (https://github.com/WebGoat/WebGoat) à l'aide d'une pipeline CI/CD.
@@ -16,6 +10,8 @@ Les objectifs principaux de ce projet sont:
 - L'automatisation des builds et déploiements avec GitHub Actions.
 - L'intégration des tests de sécurité statiques et dynamiques.
 - La surveillance et l'optimisation des performances et des coûts avec Prometheus, Grafana, et Kubecost.
+
+**Auteurs principaux:** Louis Lalonde [@louislalonde](https://github.com/LouisLalonde), Andy Chen [@AnOddWobbuffet](https://github.com/AnOddWobbuffet) and Ali Hazime [@AliSandro104](https://github.com/AliSandro104)
 
 ## Outils utilisés
 
