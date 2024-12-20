@@ -47,14 +47,3 @@
       async: 0  # Run indefinitely
       poll: 0   # Don't wait for the command to finish
       ignore_errors: true  # Prevent failure if minikube tunnel is already running
-
-    - name: Run kubectl port-forward with nohup in the background
-      shell: "sudo nohup kubectl port-forward --address 0.0.0.0 service/nginx-ingress-ingress-nginx-controller -n ingress-nginx 80:80 443:443 > /tmp/port-forward.log 2>&1 &"
-      async: 0  # Run indefinitely
-      poll: 0   # Don't wait for the command to finish
-      ignore_errors: true  # Prevent failure if port-forward is already running
-      register: port_forward_result
-
-    - name: Check kubectl port-forward result
-      debug:
-        msg: "Port forwarding for NGINX Ingress Controller started: {{ port_forward_result }}"
