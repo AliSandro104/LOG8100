@@ -13,6 +13,17 @@ Les objectifs principaux de ce projet sont:
 
 **Auteurs principaux:** Louis Lalonde [@louislalonde](https://github.com/LouisLalonde), Andy Chen [@AnOddWobbuffet](https://github.com/AnOddWobbuffet) and Ali Hazime [@AliSandro104](https://github.com/AliSandro104)
 
+## Services
+
+| Nom | Port | URL |
+|----------|----------|----------|
+| WebGoat    | 80/443     | http://team-1-log8100-project.canadacentral.cloudapp.azure.com/WebGoat/login     |
+| Prometheus    | 9090     | http://team-1-log8100-project.canadacentral.cloudapp.azure.com:9090/    |
+| Grafana    | 3000     | http://team-1-log8100-project.canadacentral.cloudapp.azure.com:3000/     |
+| Kubecost    | 9095     | http://team-1-log8100-project.canadacentral.cloudapp.azure.com:9095/     |
+| Alertmanager    | 9093     | http://team-1-log8100-project.canadacentral.cloudapp.azure.com:9093/   |
+
+
 ## Outils utilisés
 
 - Terraform : Automatisation de l'infrastructure en tant que code (IaC).
