@@ -13,7 +13,7 @@ Les objectifs principaux de ce projet sont:
 
 **Auteurs principaux:** Louis Lalonde [@louislalonde](https://github.com/LouisLalonde), Andy Chen [@AnOddWobbuffet](https://github.com/AnOddWobbuffet) and Ali Hazime [@AliSandro104](https://github.com/AliSandro104)
 
-## Services
+## Kubernetes Service Endpoints
 
 | Nom | Port | URL |
 |----------|----------|----------|
@@ -57,7 +57,7 @@ Après que les modifications au projet sont intégrées sur le dépôt Github da
 
 Après qu'une branche de développement soit intégrée sur une branche Release avec un Pull Request, la pipeline configurée sur Github réalise les étapes suivantes:
 
-- Construction d'image Docker
+- Construction d'image Docker et publication dans le référentiel personnel [dockerhub](https://hub.docker.com/repository/docker/llalondedkhub/log8100-webgoat/tags) 
 - Scan de vulnérabilités sur l'image et génération d'un rapport à l'aide de Trivy
 - Déploiement automatique des conteneurs avec Ansible (voir le dossier ansible/..) dans l'environnement Staging
 - Tests dynamiques de sécurité sur le conteneur de l'application avec OWASP ZAP
