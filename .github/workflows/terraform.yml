@@ -77,10 +77,3 @@ jobs:
         TF_VAR_admin_username: ${{ secrets.VM_ADMIN_USERNAME }}
         TF_VAR_admin_password: ${{ secrets.VM_ADMIN_PASSWORD }}
         TF_VAR_iac_remote_repository_url: ${{ secrets.IAC_REPO_URL }}
-
-    - name: Save SSH Private Key
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      run: |
-        mkdir -p ~/.ssh
-        terraform output -raw tls_private_key_pem > ~/.ssh/azure_vm_key.pem
-        chmod 600 ~/.ssh/azure_vm_key.pem
